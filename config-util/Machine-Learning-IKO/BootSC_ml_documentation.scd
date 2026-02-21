@@ -12,7 +12,7 @@ s.reboot { // server options are only updated on reboot
 	s.options.maxLogins = 2;
 	// adjust here if you use something else
 	s.options.inDevice = "Default";
-	s.options.outDevice = "BlackHole 64ch";
+	s.options.outDevice = "VB-Cable";
 	s.options.bindAddress = "0.0.0.0";
 
     s.waitForBoot {
@@ -117,3 +117,4 @@ SynthDef(\sergeXY, { |out = 0, gain = 0.2, sliceBus = 128, n=0, pan, rate = 1, f
 );
 );
 });
+s.meter
