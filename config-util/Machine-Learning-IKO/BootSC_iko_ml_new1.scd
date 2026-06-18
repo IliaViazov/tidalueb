@@ -2,21 +2,22 @@
 s.reboot { // server options are only updated on reboot
 	// configure the sound server: here you could add hardware specific options
 	// see http://doc.sccode.org/Classes/ServerOptions.html
+	s.options.sampleRate = 44100;
 	s.options.numBuffers = 1024 * 256; // increase this if you need to load more samples
-	s.options.memSize = 8192 * 64; // increase this if you get "alloc failed" messages
-	s.options.numWireBufs = 64; // increase this if you get "exceeded number of interconnect buffers" messages
-	s.options.maxNodes = 1024 * 32; // increase this if you are getting drop outs and the message "too many nodes"
-	s.options.numOutputBusChannels = 2; // set this to your hardware output channel size, if necessary
-	s.options.numInputBusChannels = 2; // set this to your hardware output channel size, if necessary
+	s.options.memSize = 8192 * 128; // increase this if you get "alloc failed" messages
+	s.options.numWireBufs = 128; // increase this if you get "exceeded number of interconnect buffers" messages
+	s.options.maxNodes = 1024 * 64; // increase this if you are getting drop outs and the message "too many nodes"
+	s.options.numOutputBusChannels = 64; // set this to your hardware output channel size, if necessary
+	s.options.numInputBusChannels = 64; // set this to your hardware output channel size, if necessary
 	// boot the server and start SuperDirt
-	s.options.maxLogins = 2;
+
 	// adjust here if you use something else
 	s.options.inDevice = "Default";
 	s.options.outDevice = "Default";
-	s.options.bindAddress = "0.0.0.0";
+	s.volume = -9;
 
 	s.waitForBoot {
-		~dirt = SuperDirt(2, s); // two output channels, increase if you want to pan across more channels
+		~dirt = SuperDirt(8, s); // two output channels, increase if you want to pan across more channels
 		~dirt.loadSoundFiles;   // load samples (path containing a wildcard can be passed in)
 		~dirt.loadSynthDefs;
 		// for example: ~dirt.loadSoundFiles("/Users/myUserName/Dirt/samples/*");
@@ -30,7 +31,7 @@ s.reboot { // server options are only updated on reboot
 			~d7 = ~dirt.orbits[6]; ~d8 = ~dirt.orbits[7]; ~d9 = ~dirt.orbits[8];
 			~d10 = ~dirt.orbits[9]; ~d11 = ~dirt.orbits[10]; ~d12 = ~dirt.orbits[11];
 		);
-		///here the spat
+		///here is the ML
 		(
 			~src = Buffer.read(
 				s,
@@ -64,17 +65,49 @@ s.reboot { // server options are only updated on reboot
 			~position4 = Buffer.alloc(s, 2, 1);
 			~sliceBus4 = Bus.control(s, 1);
 		);
+		s.sync;
+		///here the spat, the buses are for future, don't use now but I wouldnt like to program it again later, so it should be here
+		s.newBusAllocators;
+		~a = Bus.control(s, 1);
+		~b = Bus.control(s, 1);
+		SynthDef(\spat, {
+			arg aBus = 0, bBus = 1;
+			var sig, a, b;
+			a = In.kr(aBus, 1);
+			b = In.kr(bBus, 1);
+			sig = [SoundIn.ar(30),SoundIn.ar(31),SoundIn.ar(32),SoundIn.ar(33),SoundIn.ar(34),SoundIn.ar(35),SoundIn.ar(36),SoundIn.ar(37)];
+			sig = VSTPlugin.ar(
+				sig,
+				16,
+				id: \ambix,
+				params: [3, 0.875]
+			);
+			sig = VSTPlugin.ar(
+				sig,
+				20,
+				id: \mcfx
+			);
+			Out.ar(32, Limiter.ar(sig));
+		}).add;
+		s.sync;
+		~spat = Synth(\spat, [
+			\aBus, ~a.index,
+			\bBus, ~b.index
+		], target: s);
+		~ambix = VSTPluginController(~spat, \ambix);
+		~mcfx  = VSTPluginController(~spat, \mcfx);
+		~ambix.open("ambix_encoder_i8_o3", editor: true);
+		~mcfx.open("mcfx_convolver24", editor: true);
+		s.sync;
+		~mcfx.readProgram("/Users/ilia_viazov/Desktop/Projects/tusa/config-util/Machine-Learning-IKO/test.vstpreset");
 	};
 
-
-	s.latency = 0.3;
 	OSCFunc({|msg| msg.postln}, 'status.reply', s.addr);
-	s.status;// increase this if you get "late" messages
-};
-);
+	s.status;
 
+	s.latency = 0.3; // increase this if you get "late" messages
 
-s.doWhenBooted(onComplete: {
+	s.doWhenBooted(onComplete: {
 	5.wait;
 	(
 /*
@@ -84,7 +117,7 @@ rate - rate of Buffer phaser
 freq - frequency of lfo to start position
 lfo - amount of modulation
 */
-		SynthDef(\serge1, { |out = 0, gain = 0.2, sliceBus = 128, n=0, pan, rate = 1, freq = 0, lfo = 0, x = 0, y = 0, mouse = 0, index = 0 |
+		SynthDef(\serge1, { |out = 0, gain = 0.2, sliceBus = 128, n=0, pan, rate = 1, freq = 0, lfo = 0, x = 0, y = 0, que = 0, index = 0 |
 			var sliceIndex, start, end, phs, sig;
 
 			sliceIndex = In.kr(~sliceBus1).clip(0, ~indices.numFrames - 2);
@@ -99,8 +132,8 @@ lfo - amount of modulation
 				end: end
 			);
 
-			BufWr.kr(MouseX.kr(0, 1) * mouse + x, ~position1, 0);
-			BufWr.kr(MouseY.kr(0, 1) * mouse + y, ~position1, 1);
+			BufWr.kr((MouseX.kr(0, 1) * (1 - que)) + (x * que), ~position1, 0);
+			BufWr.kr((MouseY.kr(0, 1) * (1 - que)) + (y * que), ~position1, 1);
 
 			sig = BufRd.ar(2, ~src, phs, loop: 1, interpolation: 4);
 			sig = (sig * gain * 10).tanh;
@@ -108,7 +141,7 @@ lfo - amount of modulation
 			Out.ar(out, DirtPan.ar(sig, ~dirt.numChannels, pan));
 		}).add;
 
-		SynthDef(\serge2, { |out = 0, gain = 0.2, sliceBus = 129, n=0, pan, rate = 1, freq = 0, lfo = 0, x = 0, y = 0, mouse = 0, index = 0 |
+		SynthDef(\serge2, { |out = 0, gain = 0.2, sliceBus = 129, n=0, pan, rate = 1, freq = 0, lfo = 0, x = 0, y = 0, que = 0, index = 0 |
 			var sliceIndex, start, end, phs, sig;
 
 			sliceIndex = In.kr(~sliceBus2).clip(0, ~indices.numFrames - 2);
@@ -123,8 +156,8 @@ lfo - amount of modulation
 				end: end
 			);
 
-			BufWr.kr(MouseX.kr(0, 1) * mouse + x, ~position2, 0);
-			BufWr.kr(MouseY.kr(0, 1) * mouse + y, ~position2, 1);
+			BufWr.kr(MouseX.kr(0, 1) * (1 - que) + (x * que), ~position2, 0);
+			BufWr.kr(MouseY.kr(0, 1) * (1 - que) + (y * que), ~position2, 1);
 
 			sig = BufRd.ar(2, ~src, phs, loop: 1, interpolation: 4);
 			sig = (sig * gain * 10).tanh;
@@ -132,7 +165,7 @@ lfo - amount of modulation
 			Out.ar(out, DirtPan.ar(sig, ~dirt.numChannels, pan));
 		}).add;
 
-		SynthDef(\serge3, { |out = 0, gain = 0.2, sliceBus = 130, n=0, pan, rate = 1, freq = 0, lfo = 0, x = 0, y = 0, mouse = 0, index = 0 |
+		SynthDef(\serge3, { |out = 0, gain = 0.2, sliceBus = 130, n=0, pan, rate = 1, freq = 0, lfo = 0, x = 0, y = 0, que = 0, index = 0 |
 			var sliceIndex, start, end, phs, sig;
 
 			sliceIndex = In.kr(~sliceBus3).clip(0, ~indices.numFrames - 2);
@@ -147,8 +180,8 @@ lfo - amount of modulation
 				end: end
 			);
 
-			BufWr.kr(MouseX.kr(0, 1) * mouse + x, ~position3, 0);
-			BufWr.kr(MouseY.kr(0, 1) * mouse + y, ~position3, 1);
+			BufWr.kr(MouseX.kr(0, 1) * (1 - que) + (x * que), ~position3, 0);
+			BufWr.kr(MouseY.kr(0, 1) * (1 - que) + (y * que), ~position3, 1);
 
 			sig = BufRd.ar(2, ~src, phs, loop: 1, interpolation: 4);
 			sig = (sig * gain * 10).tanh;
@@ -156,7 +189,7 @@ lfo - amount of modulation
 			Out.ar(out, DirtPan.ar(sig, ~dirt.numChannels, pan));
 		}).add;
 
-		SynthDef(\serge4, { |out = 0, gain = 0.2, sliceBus = 131, n=0, pan, rate = 1, freq = 0, lfo = 0, x = 0, y = 0, mouse = 0, index = 0 |
+		SynthDef(\serge4, { |out = 0, gain = 0.2, sliceBus = 131, n=0, pan, rate = 1, freq = 0, lfo = 0, x = 0, y = 0, que = 0, index = 0 |
 			var sliceIndex, start, end, phs, sig;
 
 			sliceIndex = In.kr(~sliceBus4).clip(0, ~indices.numFrames - 2);
@@ -171,8 +204,8 @@ lfo - amount of modulation
 				end: end
 			);
 
-			BufWr.kr(MouseX.kr(0, 1) * mouse + x, ~position4, 0);
-			BufWr.kr(MouseY.kr(0, 1) * mouse + y, ~position4, 1);
+			BufWr.kr(MouseX.kr(0, 1) * (1 - que) + (x * que), ~position4, 0);
+			BufWr.kr(MouseY.kr(0, 1) * (1 - que) + (y * que), ~position4, 1);
 
 			sig = BufRd.ar(2, ~src, phs, loop: 1, interpolation: 4);
 			sig = (sig * gain * 10).tanh;
@@ -182,7 +215,7 @@ lfo - amount of modulation
 
 		s.sync;
 	);
-
+	s.sync;
 	(
 
 		(
@@ -229,4 +262,5 @@ lfo - amount of modulation
 			}.play;
 		);
 	);
+});
 });

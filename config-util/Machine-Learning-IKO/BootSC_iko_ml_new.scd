@@ -14,7 +14,7 @@ s.reboot { // server options are only updated on reboot
 	// adjust here if you use something else
 	s.options.inDevice = "Default";
 	s.options.outDevice = "Default";
-	s.volume = -8;
+	s.volume = -9;
 
 	s.waitForBoot {
 		~dirt = SuperDirt(8, s); // two output channels, increase if you want to pan across more channels
