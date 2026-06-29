@@ -54,14 +54,14 @@ s.doWhenBooted(onComplete: {
     x, y  - manual position when mouse = 0
     */
     SynthDef(\sergeXY, { |out = 0, gain = 0.2, sliceBus = 128, n = 0, pan,
-                          rate = 1, freq = 0, lfo = 0, x = 0, y = 0, mouse = 1.0|
+                          rate = 1, freq = 0, lfo = 0, x = 0, y = 0, mouseX = 1.0, mouseY = 1.0|
         var sliceIndex, start, end, phs, sig;
         var xQue, yQue;
 
         sliceIndex = In.kr(sliceBus).clip(0, ~indices.numFrames - 2);
 
-        xQue = (MouseX.kr(0, 1) * mouse) + (x * (1 - mouse));
-        yQue = (MouseY.kr(0, 1) * mouse) + (y * (1 - mouse));
+        xQue = (MouseX.kr(0, 1) * mouseX) + (x * (1 - mouseX));
+        yQue = (MouseY.kr(0, 1) * mouseY) + (y * (1 - mouseY));
 
         BufWr.kr(xQue, ~position, 0);
         BufWr.kr(yQue, ~position, 1);

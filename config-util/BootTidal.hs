@@ -33,4 +33,5 @@ instance Tidally where tidal = tidalInst
 
 let x = pF "x"
 let y = pF "y"
-let mouse = pF "mouse"
+let mouseX = pF "mouseX"
+let mouseY = pF "mouseY"
