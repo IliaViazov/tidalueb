@@ -1,12 +1,21 @@
+// So the shit is
+// The convolver seems to work with samples on 48kHz, but the ambix encoder acts weird with the 48kHz, and starts to produce less channels as it should and as a result it produces only ten channels out of mcfx instead of 20. The spat is still noticible and it sounds actually more or less right, but it's not what should be
+
+//TODO after Graduation:
+//Make a proper beamforming with Ambisonics toolkit and convolver there using the resampled impulse responses from the IKO.
+//Rewrite the DirtPan into a normal beamforming without relying on a funny totalmix preset.
+//To make a new dataset from the audio that Diego gave me.
+
 (
 s.reboot {
-    s.options.sampleRate           = 44100;
+    s.options.sampleRate           = 48000;
     s.options.numBuffers           = 1024 * 256;
     s.options.memSize              = 8192 * 128;
-    s.options.numWireBufs          = 128;
+    s.options.numWireBufs          = 256;
     s.options.maxNodes             = 1024 * 64;
     s.options.numOutputBusChannels = 64;
     s.options.numInputBusChannels  = 64;
+	s.options.blockSize = 64;
     s.options.inDevice             = "Default";
     s.options.outDevice            = "Default";
     s.latency                      = 0.3;
@@ -37,6 +46,8 @@ s.reboot {
         ~position = Buffer.alloc(s, 2, 1);
         ~sliceBus = Bus.control(s, 1);
 
+		~ambixAudio = Bus.audio(s, 16);
+
         s.sync;
 
         // Spatialisation — ~a and ~b reserved for future use
@@ -48,7 +59,9 @@ s.reboot {
             var sig;
             sig = SoundIn.ar([30, 31, 32, 33, 34, 35, 36, 37]);
             sig = VSTPlugin.ar(sig, 16, id: \ambix, params: [3, 0.875]);
+			Out.ar(~ambixAudio, sig);
             sig = VSTPlugin.ar(sig, 20, id: \mcfx);
+
             Out.ar(32, Limiter.ar(sig));
         }).add;
 
@@ -62,7 +75,7 @@ s.reboot {
 
         s.sync;
 
-        ~mcfx.readProgram("/Users/ilia_viazov/Desktop/Projects/tusa/config-util/Machine-Learning-IKO/test.vstpreset");
+        /*~mcfx.readProgram("/Users/ilia_viazov/Desktop/Projects/tusa/config-util/Machine-Learning-IKO/test.vstpreset");*/
     };
 
     OSCFunc({ |msg| msg.postln }, 'status.reply', s.addr);
@@ -121,3 +134,7 @@ s.doWhenBooted(onComplete: {
         }
     }.play;
 });
+
+~ambix.editor
+~mcfx.editor
+s.meter
