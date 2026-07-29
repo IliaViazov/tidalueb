@@ -1,7 +1,41 @@
 #!/bin/bash
-cd 
+cd
 REAL_PATH=$(readlink -f ~/tusa)
 cd "$REAL_PATH"
+
+SPAT_DIR="config-util/Machine-Learning-IKO"
+BOOT_FILE="config-util/BootSC.scd"
+TUSA_ML="USER INPUT"
+TUSA_SPAT="USER INPUT"
+
+read -p "Do you want to use ML? [y/n]: " TUSA_ML
+
+spat_files=()
+while IFS= read -r f; do
+    spat_files+=("$f")
+done < <(find "$SPAT_DIR" -maxdepth 1 -name "*.scd" | sort)
+
+if [ ${#spat_files[@]} -eq 0 ]; then
+    echo "No spat .scd files found in $SPAT_DIR — falling back to base boot file."
+else
+    echo "What spatialisation do you use?" 
+    echo "Available spatialisation configs:"
+    for i in "${!spat_files[@]}"; do
+        printf "  [%d] %s\n" "$i" "$(basename "${spat_files[$i]}")"
+    done
+
+    read -p "Pick a number: " spat_choice
+
+    if [[ "$spat_choice" =~ ^[0-9]+$ ]] && [ "$spat_choice" -lt "${#spat_files[@]}" ]; then
+        TUSA_SPAT="${spat_files[$spat_choice]}"
+    else
+        echo "Invalid selection, falling back to base boot file."
+    fi
+fi
+
+
+
+echo "Using boot file: $BOOT_FILE"
 
 tmux new-session -d -s mysession
 tmux source-file config-util/.tmux.conf
@@ -10,8 +44,17 @@ tmux send-keys "./config-util/ghci-color -ghci-script 'config-util/BootTidal.hs'
 
 # SuperCollider
 tmux splitw -v -p 10
-tmux send-keys "sclang config-util/BootSC.scd" Enter
-tmux selectp -t 0
+tmux send-keys "sclang $BOOT_FILE" Enter
+
+# Machine Learning
+if [ "$ml" = "y" ]; then
+    tmux splitw -h -p 30
+    tmux send-keys "python3 config-util/Machine-Learning-IKO/plotter.py $REAL_PATH/config-util/Machine-Learning-IKO/temp_dataset.json 90 17" Enter
+    tmux selectp -t mysession:0.0
+
+else    
+    tmux selectp -t mysession:0.0
+fi
 
 # Reference
 tmux splitw -h -p 30
@@ -22,6 +65,5 @@ tmux selectp -t mysession:0.0
 tmux splitw -h -p 30
 tmux send-keys "nano snippets/snippets.hs --rcfile config-util/.nanorc -/" Enter
 tmux selectp -t mysession:0.0
-
 
 tmux attach -t mysession

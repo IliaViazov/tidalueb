@@ -108,6 +108,7 @@ echo "Installing SuperDirt and Dirt Samples Quarks..."
 sclang -D <<EOL
 Quarks.install("https://github.com/tidalcycles/Dirt-Samples");
 Quarks.install("https://github.com/musikinformatik/SuperDirt");
+Quarks.install("http://github.com/scztt/Require");
 
 s.waitForBoot {
     "Quarks installed".postln;
@@ -116,4 +117,3 @@ s.waitForBoot {
 EOL
 
 echo "Dirt Samples and SuperDirt are installed. Now everything should work."
-echo "Note: your shell is Nushell by default — ghcup/cabal may have added PATH entries to ~/.bashrc or ~/.zshrc that Nushell won't read. Check ~/.ghcup/env and add the equivalent to your Nushell config if commands like 'ghc' or 'cabal' aren't found in new terminals."

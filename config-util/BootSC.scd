@@ -36,8 +36,6 @@ s.reboot { // server options are only updated on reboot
     s.latency = 0.3; // increase this if you get "late" messages
 };
 
-
-
 OSCFunc({|msg| msg.postln}, 'status.reply', s.addr);
 s.status;
 );
