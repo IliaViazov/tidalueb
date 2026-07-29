@@ -7,10 +7,11 @@ s.reboot {
     s.options.maxNodes             = 1024 * 64;
     s.options.numOutputBusChannels = 64;
     s.options.numInputBusChannels  = 64;
+	s.options.blockSize_(64);
     s.options.inDevice             = "Default";
     s.options.outDevice            = "Default";
     s.latency                      = 0.3;
-    s.volume                       = -9;
+    s.volume                       = -7;
 
     s.waitForBoot {
         // SuperDirt

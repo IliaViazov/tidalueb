@@ -19,7 +19,7 @@ s.reboot {
     s.options.inDevice             = "Default";
     s.options.outDevice            = "Default";
     s.latency                      = 0.3;
-    s.volume                       = -9;
+    s.volume                       = -16;
 
     s.waitForBoot {
         // SuperDirt
