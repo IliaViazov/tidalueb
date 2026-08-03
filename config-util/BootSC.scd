@@ -14,8 +14,18 @@ s.reboot { // server options are only updated on reboot
 	s.options.inDevice = "Default";
 	s.options.outDevice = "Default";
 
+    ~mlFile   = thisProcess.argv[0];
+    ~spatFile = thisProcess.argv[1];
+
     s.waitForBoot {
-        ~dirt = SuperDirt(2, s); // two output channels, increase if you want to pan across more channels
+
+        if (~spatFile.notNil and: {~spatFile != "" }) {
+            ~dirt = SuperDirt(8, s);
+        }
+        {
+            ~dirt = SuperDirt(2, s);
+        };
+
         ~dirt.loadSoundFiles;   // load samples (path containing a wildcard can be passed in)
 		~dirt.loadSynthDefs;
 		~dirt.startSendRMS;
@@ -36,6 +46,23 @@ s.reboot { // server options are only updated on reboot
     s.latency = 0.3; // increase this if you get "late" messages
 };
 
-OSCFunc({|msg| msg.postln}, 'status.reply', s.addr);
+OSCFunc({|msg| msg.postln; ~mlFile.postln; ~spatFile.postln;}, 'status.reply', s.addr);
 s.status;
 );
+
+s.doWhenBooted(onComplete: {
+
+    s.sync;
+
+    if (~mlFile.notNil and: { ~mlFile != "" }) {
+        Require(~mlFile.standardizePath);
+    };
+
+    s.sync;
+
+    if (~spatFile.notNil and: { ~spatFile != "" }) {
+        Require(~spatFile.standardizePath);
+    };
+
+    s.meter;
+});
