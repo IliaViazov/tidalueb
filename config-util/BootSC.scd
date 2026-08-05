@@ -1,7 +1,5 @@
 (
-s.reboot { // server options are only updated on reboot
-    // configure the sound server: here you could add hardware specific options
-    // see http://doc.sccode.org/Classes/ServerOptions.html
+s.reboot {
     s.options.numBuffers = 1024 * 256; // increase this if you need to load more samples
     s.options.memSize = 8192 * 32; // increase this if you get "alloc failed" messages
     s.options.numWireBufs = 64; // increase this if you get "exceeded number of interconnect buffers" messages
@@ -16,10 +14,11 @@ s.reboot { // server options are only updated on reboot
 
     ~mlFile   = thisProcess.argv[0];
     ~spatFile = thisProcess.argv[1];
+	~moduleFiles = thisProcess.argv[2..];
 
     s.waitForBoot {
 
-        if (~spatFile.notNil and: {~spatFile != "" }) {
+        if (~spatFile.notNil and: {~spatFile != "!" }) {
             ~dirt = SuperDirt(8, s);
         }
         {
@@ -46,23 +45,49 @@ s.reboot { // server options are only updated on reboot
     s.latency = 0.3; // increase this if you get "late" messages
 };
 
-OSCFunc({|msg| msg.postln; ~mlFile.postln; ~spatFile.postln;}, 'status.reply', s.addr);
+OSCFunc({|msg| msg.postln; }, 'status.reply', s.addr);
 s.status;
 );
 
 s.doWhenBooted(onComplete: {
 
-    s.sync;
-
-    if (~mlFile.notNil and: { ~mlFile != "" }) {
-        Require(~mlFile.standardizePath);
+    if (~mlFile.notNil and: { ~mlFile != "!"  } ) {
+        ("Loading ML file: " ++ ~mlFile).postln;
+        if (File.exists(~mlFile)) {
+            Require(~mlFile.standardizePath);
+        } {
+            ("ERROR: ML file not found: " ++ ~mlFile).warn;
+        };
     };
 
     s.sync;
 
-    if (~spatFile.notNil and: { ~spatFile != "" }) {
-        Require(~spatFile.standardizePath);
+    // Load Spat file if provided
+    if (~spatFile.notNil and: { ~spatFile != "!" } ) {
+        ("Loading Spat file: " ++ ~spatFile).postln;
+        if (File.exists(~spatFile)) {
+            Require(~spatFile.standardizePath);
+        } {
+            ("ERROR: Spat file not found: " ++ ~spatFile).warn;
+        };
     };
 
-    s.meter;
+    s.sync;
+
+    // Load Module files if provided
+    if (~moduleFiles.notNil and: { ~moduleFiles.size > 0 }) {
+        ~moduleFiles.do { |module|
+            if (module.notNil and: { module != "!" }) {
+                ("Loading Module file: " ++ module).postln;
+                if (File.exists(module)) {
+                    Require(module.standardizePath);
+                    s.sync;
+                } {
+                    ("ERROR: Module file not found: " ++ module).warn;
+                };
+            };
+        };
+    };
+
+    "=== All files loaded ===".postln;
 });

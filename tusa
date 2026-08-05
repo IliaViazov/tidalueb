@@ -3,16 +3,17 @@ cd
 REAL_PATH=$(readlink -f ~/tusa)
 cd "$REAL_PATH"
 
-SPAT_DIR="config-util/spat"
-ML_DIR="config-util/ml"
+SPAT_DIR="$REAL_PATH/config-util/spat"
+ML_DIR="$REAL_PATH/config-util/ml"
+MODULES_DIR="$REAL_PATH/config-util/modules"
 
-SC_BOOT_FILE="config-util/BootSC.scd"
+SC_BOOT_FILE="$REAL_PATH/config-util/BootSC.scd"
 
-TUSA_ML="nil"
-TUSA_SPAT="nil"
+TUSA_ML="!"
+TUSA_SPAT="!"
+TUSA_MODULES=()
 
 read -p "Do you want to use ML? [0/1]: " ml
-read -p "Do you play stereo or with spat? [0/1]: " spat
 
 if [ "$ml" = "1" ]; then
     ml_files=()
@@ -23,7 +24,7 @@ if [ "$ml" = "1" ]; then
         echo "No ml .scd files found in $ML_DIR — falling back to no ml."
     else
         echo "What machine learning do you use?" 
-        echo "Available spatialisation configs:"
+        echo "Available machine learning files:"
         for i in "${!ml_files[@]}"; do
             printf "  [%d] %s\n" "$i" "$(basename "${ml_files[$i]}")"
         done
@@ -39,17 +40,18 @@ if [ "$ml" = "1" ]; then
     fi
 fi
 
-if ["$spat" = "1"]; then
+read -p "Do you play stereo or with spat? [0/1]: " spat
+
+if [ "$spat" = "1" ]; then
     spat_files=()
     while IFS= read -r f; do
         spat_files+=("$f")
     done < <(find "$SPAT_DIR" -maxdepth 1 -name "*.scd" | sort)
-
     if [ ${#spat_files[@]} -eq 0 ]; then
-        echo "No spat .scd files found in $SPAT_DIR — running stereo"
+        echo "No spat .scd files found in $SPAT_DIR — falling back to no spat."
     else
         echo "What spatialisation do you use?" 
-        echo "Available spatialisation configs:"
+        echo "Available spatialisation files:"
         for i in "${!spat_files[@]}"; do
             printf "  [%d] %s\n" "$i" "$(basename "${spat_files[$i]}")"
         done
@@ -65,19 +67,56 @@ if ["$spat" = "1"]; then
     fi
 fi
 
-tmux new-session -d -s mysession
-tmux source-file config-util/.tmux.conf
+while true; do
+    read -p "Do you want to add a module? [0/1]: " add_module
+    
+    if [ "$add_module" = "0" ]; then
+        break
+    elif [ "$add_module" = "1" ]; then
+        modules_files=()
+        while IFS= read -r f; do
+            modules_files+=("$f")
+        done < <(find "$MODULES_DIR" -maxdepth 1 -name "*.scd" | sort)
+        
+        if [ ${#modules_files[@]} -eq 0 ]; then
+            echo "No module .scd files found in $MODULES_DIR"
+            break
+        else
+            echo "Available module files:"
+            for i in "${!modules_files[@]}"; do
+                printf "  [%d] %s\n" "$i" "$(basename "${modules_files[$i]}")"
+            done
+            
+            read -p "Pick a number: " modules_choice
+            
+            if [[ "$modules_choice" =~ ^[0-9]+$ ]] && [ "$modules_choice" -lt "${#modules_files[@]}" ]; then
+                TUSA_MODULES+=("${modules_files[$modules_choice]}")
+                echo "Added: ${modules_files[$modules_choice]}"
+            else
+                echo "Invalid selection, please try again."
+            fi
+        fi
+    else
+        echo "Invalid input. Please enter 0 or 1."
+    fi
+done
 
-tmux send-keys "./config-util/ghci-color -ghci-script 'config-util/BootTidal.hs'" Enter
+tmux new-session -d -s mysession
+tmux source-file "$REAL_PATH/config-util/.tmux.conf"
+
+tmux send-keys "$REAL_PATH/config-util/ghci-color -ghci-script '$REAL_PATH/config-util/BootTidal.hs'" Enter
 
 # SuperCollider
 tmux splitw -v -p 10
-tmux send-keys "sclang $SC_BOOT_FILE $TUSA_ML $TUSA_SPAT" Enter
+tmux send-keys "sclang $SC_BOOT_FILE $TUSA_ML $TUSA_SPAT ${TUSA_MODULES[@]}" Enter
 
+# ${string%substring} - delete from the end
 # Machine Learning
 if [ "$ml" = "1" ]; then
     tmux splitw -h -p 30
-    tmux send-keys "python3 config-util/ml/plotter.py $REAL_PATH/config-util/ml/temp_dataset.json 90 17" Enter
+    # Extract the directory path from the .scd file
+    ML_DIR_PATH="${TUSA_ML%.scd}"
+    tmux send-keys "python3 ${ML_DIR_PATH}/plotter.py ${ML_DIR_PATH}/temp_dataset.json 90 17" Enter
     tmux selectp -t mysession:0.0
 else    
     tmux selectp -t mysession:0.0
@@ -85,12 +124,12 @@ fi
 
 # Reference
 tmux splitw -h -p 30
-tmux send-keys "glow reference" Enter
+tmux send-keys "glow $REAL_PATH/reference" Enter
 tmux selectp -t mysession:0.0
 
 # Snippets
 tmux splitw -h -p 30
-tmux send-keys "nano snippets/snippets.hs --rcfile config-util/.nanorc -/" Enter
+tmux send-keys "nano $REAL_PATH/snippets/snippets.hs --rcfile $REAL_PATH/config-util/.nanorc -/" Enter
 tmux selectp -t mysession:0.0
 
 tmux attach -t mysession

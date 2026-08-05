@@ -1,8 +1,8 @@
 ~src     = Buffer.read(s, "/Users/ilia_viazov/Desktop/Projects/documentation/room-playing/serge/serge.wav");
-~indices = Buffer.read(s, "/Users/ilia_viazov/Desktop/Projects/tusa/config-util/Machine-Learning-IKO/indices.wav");
+~indices = Buffer.read(s, "/Users/ilia_viazov/Desktop/Projects/tusa/config-util/ml/serge/indices.wav");
 
 ~normed  = FluidDataSet(s);
-~normed.read("/Users/ilia_viazov/Desktop/Projects/tusa/config-util/Machine-Learning-IKO/temp_dataset.json");
+~normed.read("/Users/ilia_viazov/Desktop/Projects/tusa/config-util/ml/serge/temp_dataset.json");
 
 ~tree = FluidKDTree(s);
 ~tree.fit(~normed);
