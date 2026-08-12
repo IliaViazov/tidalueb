@@ -93,17 +93,6 @@ else
     echo "sc3-plugins already installed."
 fi
 
-if [ ! -d ~/"Library/Application Support/SuperCollider/Extensions/Flucoma" ]; then
-    echo "Installing FluCoMa..."
-    curl -fL https://github.com/flucoma/flucoma-sc/archive/refs/tags/1.0.9.zip -o /tmp/flucoma-sc-1.0.9.zip
-    mkdir -p ~/"Library/Application Support/SuperCollider/Extensions/Flucoma"
-    unzip -nq /tmp/flucoma-sc-1.0.9.zip -d ~/"Library/Application Support/SuperCollider/Extensions/Flucoma/"
-    rm /tmp/flucoma-sc-1.0.9.zip
-    echo "flucoma installed"
-else
-    echo "FluCoMa already installed."
-fi
-
 echo "Installing SuperDirt and Dirt Samples Quarks..."
 sclang -D <<EOL
 Quarks.install("https://github.com/tidalcycles/Dirt-Samples");
