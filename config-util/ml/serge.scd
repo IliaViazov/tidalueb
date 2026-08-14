@@ -7,6 +7,7 @@
 ~tree = FluidKDTree(s);
 ~tree.fit(~normed);
 
+~knnQuant = Buffer.alloc(s, 1, 1);
 ~position = Buffer.alloc(s, 2, 1);
 ~sliceBus = Bus.control(s, 1);
 
@@ -15,7 +16,7 @@
 s.sync;
 
 SynthDef(\sergeXY, { |out = 0, gain = 0.2, n = 0, pan,
-                          rate = 1, freq = 0, lfo = 0, x = 0, y = 0, mouseX = 1.0, mouseY = 1.0|
+                          rate = 1, freq = 0, lfo = 0, x = 0, y = 0, k = 4, mX = 1.0, mY = 1.0|
     var sliceIndex, start, end, phs, sig;
     var xQue, yQue;
 
@@ -24,6 +25,7 @@ SynthDef(\sergeXY, { |out = 0, gain = 0.2, n = 0, pan,
     xQue = (MouseX.kr(0, 1) * mouseX) + (x * (1 - mouseX));
     yQue = (MouseY.kr(0, 1) * mouseY) + (y * (1 - mouseY));
 
+    BufWr.kr(kNN, ~knnQuant, 0);
     BufWr.kr(xQue, ~position, 0);
     BufWr.kr(yQue, ~position, 1);
 
@@ -46,8 +48,11 @@ s.sync;
 
 ~knnRoutine = Routine {
     loop {
-        ~tree.kNearest(~position, 4, { |nearest|
-            ~sliceBus.set(nearest.asInteger);
+        ~knnQuant.getn(0, 1, { |val|
+            val[0].asInteger.postln;
+            ~tree.kNearest(~position, val[0].asInteger.max(1), { |nearest|
+                ~sliceBus.set(nearest.asInteger);
+            });
         });
         0.02.wait;
     }
