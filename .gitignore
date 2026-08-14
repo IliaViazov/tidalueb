@@ -8,3 +8,5 @@
 # But keep the placeholder file
 !/snippets/snippets.hs
 !/snippets/.gitkeep
+
+/micro/*

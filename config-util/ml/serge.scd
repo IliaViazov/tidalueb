@@ -22,10 +22,10 @@ SynthDef(\sergeXY, { |out = 0, gain = 0.2, n = 0, pan,
 
     sliceIndex = In.kr(~sliceBus).clip(0, ~indices.numFrames - 2);
 
-    xQue = (MouseX.kr(0, 1) * mouseX) + (x * (1 - mouseX));
-    yQue = (MouseY.kr(0, 1) * mouseY) + (y * (1 - mouseY));
+    xQue = (MouseX.kr(0, 1) * mX) + (x * (1 - mX));
+    yQue = (MouseY.kr(0, 1) * mY) + (y * (1 - mY));
 
-    BufWr.kr(kNN, ~knnQuant, 0);
+    BufWr.kr(k, ~knnQuant, 0);
     BufWr.kr(xQue, ~position, 0);
     BufWr.kr(yQue, ~position, 1);
 
@@ -49,7 +49,6 @@ s.sync;
 ~knnRoutine = Routine {
     loop {
         ~knnQuant.getn(0, 1, { |val|
-            val[0].asInteger.postln;
             ~tree.kNearest(~position, val[0].asInteger.max(1), { |nearest|
                 ~sliceBus.set(nearest.asInteger);
             });

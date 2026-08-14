@@ -13,32 +13,7 @@ TUSA_ML="!"
 TUSA_SPAT="!"
 TUSA_MODULES=()
 
-read -p "Do you want to use ML? [0/1]: " ml
-
-if [ "$ml" = "1" ]; then
-    ml_files=()
-    while IFS= read -r f; do
-        ml_files+=("$f")
-    done < <(find "$ML_DIR" -maxdepth 1 -name "*.scd" | sort)
-    if [ ${#ml_files[@]} -eq 0 ]; then
-        echo "No ml .scd files found in $ML_DIR — falling back to no ml."
-    else
-        echo "What machine learning do you use?" 
-        echo "Available machine learning files:"
-        for i in "${!ml_files[@]}"; do
-            printf "  [%d] %s\n" "$i" "$(basename "${ml_files[$i]}")"
-        done
-
-        read -p "Pick a number: " ml_choice
-
-        if [[ "$ml_choice" =~ ^[0-9]+$ ]] && [ "$ml_choice" -lt "${#ml_files[@]}" ]; then
-            TUSA_ML="${ml_files[$ml_choice]}"
-            echo "$TUSA_ML"
-        else
-            echo "Invalid selection, falling back to base boot file."
-        fi
-    fi
-fi
+read -p "Do you need reference and snippets? [0/1]: " whistles
 
 read -p "Do you play stereo or with spat? [0/1]: " spat
 
@@ -61,6 +36,33 @@ if [ "$spat" = "1" ]; then
         if [[ "$spat_choice" =~ ^[0-9]+$ ]] && [ "$spat_choice" -lt "${#spat_files[@]}" ]; then
             TUSA_SPAT="${spat_files[$spat_choice]}"
             echo "$TUSA_SPAT"
+        else
+            echo "Invalid selection, falling back to base boot file."
+        fi
+    fi
+fi
+
+read -p "Do you want to use ML? [0/1]: " ml
+
+if [ "$ml" = "1" ]; then
+    ml_files=()
+    while IFS= read -r f; do
+        ml_files+=("$f")
+    done < <(find "$ML_DIR" -maxdepth 1 -name "*.scd" | sort)
+    if [ ${#ml_files[@]} -eq 0 ]; then
+        echo "No ml .scd files found in $ML_DIR — falling back to no ml."
+    else
+        echo "What machine learning do you use?" 
+        echo "Available machine learning files:"
+        for i in "${!ml_files[@]}"; do
+            printf "  [%d] %s\n" "$i" "$(basename "${ml_files[$i]}")"
+        done
+
+        read -p "Pick a number: " ml_choice
+
+        if [[ "$ml_choice" =~ ^[0-9]+$ ]] && [ "$ml_choice" -lt "${#ml_files[@]}" ]; then
+            TUSA_ML="${ml_files[$ml_choice]}"
+            echo "$TUSA_ML"
         else
             echo "Invalid selection, falling back to base boot file."
         fi
@@ -122,14 +124,18 @@ else
     tmux selectp -t mysession:0.0
 fi
 
-# Reference
-tmux splitw -h -p 30
-tmux send-keys "glow $REAL_PATH/reference" Enter
-tmux selectp -t mysession:0.0
+if [ "$whistles" = "1" ]; then
+    # Reference
+    tmux splitw -h -p 30
+    tmux send-keys "glow $REAL_PATH/reference" Enter
+    tmux selectp -t mysession:0.0
 
-# Snippets
-tmux splitw -h -p 30
-tmux send-keys "nano $REAL_PATH/snippets/snippets.hs --rcfile $REAL_PATH/config-util/.nanorc -/" Enter
-tmux selectp -t mysession:0.0
+    # Snippets
+    tmux splitw -h -p 30
+    tmux send-keys "nano $REAL_PATH/snippets/snippets.hs --rcfile $REAL_PATH/config-util/.nanorc -/" Enter
+    tmux selectp -t mysession:0.0
+else 
+    tmux selectp -t mysession:0.0
+fi
 
 tmux attach -t mysession

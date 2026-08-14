@@ -4,18 +4,27 @@ Tidal Unit for Sonic Activities.
 
 The framework functions as a tmux workflow with different panes of a terminal performing different parts of the program.
 It features an interpreter for Tidal Cycles, a snippets window for fast copying of precomposed material, a reference window that represents [the official reference](https://tidalcycles.org/docs/reference/cycles) in a brief format, and a SuperCollider server.
+The system can be extended and now includes modular system for spatialisation (IKO is supported) and additional functionality.
 
 ## Features
 - Stable performance
-- Easy installation
+- Installation script
 - Fast boot-up
-- Automatic saving of the session (memory of last 10, but could be increased modifying finish.sh)
-- Convenient keyboard shortcuts
-- Syntax highlighting
-- Reference as a cheat sheet
+- Automatic saving of the session (memory of last 10, but could be increased modifying /config-util/finish.sh)
+- Syntax highlighting in snippets window
+- Reference as a cheat sheet (yet not full)
 - No need to press Cmd+C to copy; copying is automatic while selecting
 - For devs: all settings for dependencies are local and don't affect global .rc files
 - Theoretically should work in any modern Bash terminal (tested only on MacOS)
+
+## Architecture
+The bash script `tusa` is running a tmux workflow, that everytime you boot it asks you few questions to configure the session. It asks
+- If you want to include reference with the snippets in your session.
+- If you play with some advanced spatialisation (so it loads a corresponding spatialisation script)
+- If you play with Machine Learning (it asks it separately, because it has a feature of plotting the dataset as a separate pane, currently in rethinking)
+- If you want to load any additional module of your choice.
+
+All the values are stored as variables and then are accessed as arguments for the rest of the utilities. The necessary module files are loaded in the SuperCollider Boot File via Require UGen.
 
 ## Installation
 
@@ -26,13 +35,13 @@ git clone https://github.com/IliaViazov/tusa
 ```
 
 The following script assumes that you have installed `git` and `homebrew`. The installation process is as follows:
-- Installing Haskell
-- Installing Python
-- Installing the Tidal package for Haskell
-- Installing the Nano editor
-- Installing Glow
-- Installing tmux
-- Installing SuperCollider and SuperDirt
+- Haskell
+- Python
+- Tidal package for Haskell
+- Nano Editor
+- Glow Markdown Reader
+- tmux
+- SuperCollider, SC3-Plugins, Dirt-Samples, SuperDirt, Require.
 
 ## Usage
 
@@ -40,8 +49,18 @@ The following script assumes that you have installed `git` and `homebrew`. The i
 
 ```sh
 cd path-to-directory
-./tusa.command
+./tusa
 ```
+or via `tusa` in the Terminal window directly. The installation script creates a symlink in the root of your user, so the executable should be found by default.
+
+After start the script will ask you for the modules you would like to use during the session, separating it into 3 categories:
+- Spatialisation
+- Machine Learning (originally because my module uses additional GUI for plotting the dataset)
+- Other Modules.
+
+P.s. Treating the machine learning as a separate kind of module feels for me redundant, and I'm currently working on modifying it.
+
+To each module, a supplementary folder can be assigned (look examples with IKO and Serge synthesizer), that can be read by the script or used for additional files that are processed by `.scd` file.
 
 ### Finish
 
@@ -50,6 +69,8 @@ In the interpreter window, type:
 :finish
 ```
 and then close the window. The command `:finish` is an alliance of `hush`, `:quit` and saving script in `shell` that is written inside of `BootTidal.hs`
+
+The session will be saved in the folder `/sessions` as `.hs` file
 
 ### Multi-line
 
@@ -86,6 +107,10 @@ Adjust this part of the code inside the SuperCollider bootloader, adding your un
 ```
 The path may differ from the example.
 
+### How do I add my modules?
+
+All modules shall be located in the `/config-util/modules` folder. The startup script every time asks you if you would like to load any additional module into the Boot-Loader. Each module can have its additional folder for all the utilities, files which are necessary for the work of the module.
+
 ### Don't like autocopying?
 
 Adjust `.tmux.conf` inside the repository's folder.
@@ -94,7 +119,7 @@ Adjust `.tmux.conf` inside the repository's folder.
 
 - Full support on Linux and Windows
 - Additional sample library and SuperCollider library
-- Support of Beamforming via parameters `#x`, `#y`, `#z`
+- Support of advanced spatialisation via Ambisonics Toolkit
 - Direct Communication SynthDefs: OSC, MIDI, Serial, and G-Code
 - Easy multiplayer via tmux remote feature
 
