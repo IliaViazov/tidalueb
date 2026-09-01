@@ -1,3 +1,5 @@
+The repository is migrated to Codeberg: https://codeberg.org/ilivi/tusa
+
 # tusa
 
 Tidal Unit for Sonic Activities.
